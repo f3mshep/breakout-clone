@@ -31,6 +31,9 @@ require 'src/Dependencies'
     game objects, variables, etc. and prepare the game world.
 ]]
 function love.load()
+    -- whee debug time
+    if arg[#arg] == "-debug" then require("mobdebug").start() end
+    
     -- set love's default filter to "nearest-neighbor", which essentially
     -- means there will be no filtering of pixels (blurriness), which is
     -- important for a nice crisp, 2D look

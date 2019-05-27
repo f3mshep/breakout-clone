@@ -39,19 +39,19 @@ function PlayState:enter(params)
 end
 
 function PlayState:update(dt)
-    
+
     --  mini binary state machine
     self:handlePause()
-    
+
     -- update positions based on velocity
     self.paddle:update(dt)
-    
+
     -- make powerup fall
     self:updatePowerup()
-    
+
     -- handle your balls
     self:updateBalls(dt)
-    
+
     -- for rendering particle systems
     for k, brick in pairs(self.bricks) do
         brick:update(dt)
@@ -68,16 +68,16 @@ function PlayState:updateBalls(dt)
   for k, ball in pairs(inPlayBalls) do
       -- move the ball
       ball:update(dt)
-      
+
       -- handle ball collisions
       self:updatePaddleCollision(ball)
-      
+
       -- handle brick collisions
       self:updateBrickCollision(ball)
-      
+
       -- check if we won
       self:checkWinState(ball)
-      
+
       -- check if ball left play, and act accordingly
       self:checkFailState(ball)
   end
@@ -96,8 +96,9 @@ function PlayState:checkFailState(ball)
       ball.inPlay = false
     else
       self.health = self.health - 1
+      self.paddle:shrinkPaddle()
       gSounds['hurt']:play()
-      
+
     if self.health == 0 then
         gStateMachine:change('game-over', {
             score = self.score,
@@ -198,25 +199,25 @@ end
 
 function PlayState:activePowerup()
   gSounds['confirm']:play()
-  
+
   for k, ball in pairs(self.balls) do
     ball.inPlay = true
     ball.x = self.paddle.x + (self.paddle.width / 2) - 4
     ball.y = self.paddle.y - 8
     self:addRandomBallVelocity(ball)
   end
-  
+
 end
 
 function PlayState:getInPlayBalls()
   inPlayBalls = {}
-  
+
   for k, ball in pairs(self.balls) do
     if ball.inPlay then
       table.insert(inPlayBalls, ball)
     end
   end
-  
+
   return inPlayBalls
 end
 
@@ -232,7 +233,7 @@ function PlayState:updateBrickCollision(ball)
 
           -- trigger the brick's hit function, which removes it from play
           brick:hit()
-          
+
           -- if brick gets removed from play, roll die to check if multiple ball powerup happens
           if not brick.inPlay then
             self:rollPowerupChance(brick)
@@ -240,51 +241,54 @@ function PlayState:updateBrickCollision(ball)
 
           -- if we have enough points, recover a point of health
           if self.score > self.recoverPoints then
-              -- can't go above 3 health
-              self.health = math.min(3, self.health + 1)
+            -- can't go above 3 health
+            self.health = math.min(3, self.health + 1)
 
-              -- multiply recover points by 2
-              self.recoverPoints = math.min(100000, self.recoverPoints * 2)
+            -- multiply recover points by 2
+            self.recoverPoints = math.min(100000, self.recoverPoints * 2)
 
-              -- play recover sound effect
-              gSounds['recover']:play()
+            -- grow paddle
+            self.paddle:growPaddle()
+
+            -- play recover sound effect
+            gSounds['recover']:play()
           end
-          
+
           --
           -- collision code for bricks
           --
           -- we check to see if the opposite side of our velocity is outside of the brick;
           -- if it is, we trigger a collision on that side. else we're within the X + width of
           -- the brick and should check to see if the top or bottom edge is outside of the brick,
-          -- colliding on the top or bottom accordingly 
+          -- colliding on the top or bottom accordingly
           --
 
           -- left edge; only check if we're moving right, and offset the check by a couple of pixels
           -- so that flush corner hits register as Y flips, not X flips
           if ball.x + 2 < brick.x and ball.dx > 0 then
-              
+
               -- flip x velocity and reset position outside of brick
               ball.dx = -ball.dx
               ball.x = brick.x - 8
-          
+
           -- right edge; only check if we're moving left, , and offset the check by a couple of pixels
           -- so that flush corner hits register as Y flips, not X flips
           elseif ball.x + 6 > brick.x + brick.width and ball.dx < 0 then
-              
+
               -- flip x velocity and reset position outside of brick
               ball.dx = -ball.dx
               ball.x = brick.x + 32
-          
+
           -- top edge if no X collisions, always check
           elseif ball.y < brick.y then
-              
+
               -- flip y velocity and reset position outside of brick
               ball.dy = -ball.dy
               ball.y = brick.y - 8
-          
+
           -- bottom edge if no X collisions or top collision, last possibility
           else
-              
+
               -- flip y velocity and reset position outside of brick
               ball.dy = -ball.dy
               ball.y = brick.y + 16
@@ -303,7 +307,7 @@ end
 
 function PlayState:rollPowerupChance(target)
   if  self.powerup == nil and self:isBallPowerupActive() then
-    if math.random(1,4) == math.random(1,4) then 
+    if math.random(1,4) == math.random(1,4) then
       self.powerup = Powerup(target.x + target.width / 2, target.y, 7, 8)
     end
   end
@@ -321,13 +325,13 @@ function PlayState:render()
     end
 
     self.paddle:render()
-    
+
     inPlayBalls = self:getInPlayBalls()
-    
+
     for k, ball in pairs(inPlayBalls) do
       ball:render()
     end
-    
+
     if self.powerup then
       self.powerup:render()
     end
@@ -346,7 +350,7 @@ function PlayState:checkVictory()
     for k, brick in pairs(self.bricks) do
         if brick.inPlay then
             return false
-        end 
+        end
     end
 
     return true

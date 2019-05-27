@@ -2,7 +2,10 @@ Powerup = Class{}
 
 POWERUP_DIMENSION = 16
 
-function Powerup:init(spawnX, spawnY, skin, altSkin)
+POWERUP_TYPE_TRIPLE = "triple"
+POWERUP_TYPE_KEY = "brick_key"
+
+function Powerup:init(spawnX, spawnY, skin, altSkin, type)
     -- should be spawned at X,Y coordinates where brick was broken
     self.x = spawnX
     self.y = spawnY
@@ -16,6 +19,8 @@ function Powerup:init(spawnX, spawnY, skin, altSkin)
     -- starting dimensions
     self.width = POWERUP_DIMENSION
     self.height = POWERUP_DIMENSION
+
+    self.type = type
 end
 
 function Powerup:update(count)
@@ -41,7 +46,7 @@ function Powerup:collides(target)
     -- edge of the other
     if self.y > target.y + target.height or target.y > self.y + self.height then
         return false
-    end 
+    end
 
     -- if the above aren't true, they're overlapping
     return true

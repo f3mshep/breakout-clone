@@ -55,6 +55,8 @@ function Brick:init(x, y)
     self.tier = 0
     self.color = 1
 
+    self.locked = false
+
     self.x = x
     self.y = y
     self.width = 32
@@ -85,6 +87,12 @@ end
     changing its color otherwise.
 ]]
 function Brick:hit()
+    -- nothing happens
+    if self.locked then
+        gSounds['wall-hit']:play()
+        goto continue
+    end
+
     -- set the particle system to interpolate between two colors; in this case, we give
     -- it our self.color but with varying alpha; brighter for higher tiers, fading to 0
     -- over the particle's lifetime (the second color)
@@ -122,6 +130,7 @@ function Brick:hit()
         end
     end
 
+    ::continue::
     -- play a second layer sound if the brick is destroyed
     if not self.inPlay then
         gSounds['brick-hit-1']:stop()
@@ -135,11 +144,13 @@ end
 
 function Brick:render()
     if self.inPlay then
-        love.graphics.draw(gTextures['main'],
-            -- multiply color by 4 (-1) to get our color offset, then add tier to that
-            -- to draw the correct tier and color brick onto the screen
-            gFrames['bricks'][1 + ((self.color - 1) * 4) + self.tier],
-            self.x, self.y)
+        -- multiply color by 4 (-1) to get our color offset, then add tier to that
+        -- to draw the correct tier and color brick onto the screen
+        local brick = gFrames['bricks'][1 + ((self.color - 1) * 4) + self.tier]
+        if (self.locked) then
+            brick =  gFrames['bricks'][22]
+        end
+        love.graphics.draw(gTextures['main'], brick, self.x, self.y)
     end
 end
 

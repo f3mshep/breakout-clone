@@ -47,6 +47,10 @@ function LevelMaker.createMap(level)
     -- highest color of the highest tier, no higher than 5
     local highestColor = math.min(5, level % 5 + 3)
 
+    -- determines if level will have locked brick
+    -- do some cool math here later
+    local lockedBrickChance = math.random(1, 2) == 1
+
     -- lay out bricks such that they touch each other and fill the space
     for y = 1, numRows do
         -- whether we want to enable skipping for this row
@@ -94,6 +98,15 @@ function LevelMaker.createMap(level)
                 -- y-coordinate
                 y * 16                  -- just use y * 16, since we need top padding anyway
             )
+
+            if lockedBrickChance and math.random(1, numCols) == math.random(1, numCols) then
+                b.locked = true
+                -- 5 is the color of gold, forgive me for the magic number
+                b.color = 5
+                lockedBrickChance = false
+                table.insert(bricks, b)
+                goto continue
+            end
 
             -- if we're alternating, figure out which color/tier we're on
             if alternatePattern and alternateFlag then

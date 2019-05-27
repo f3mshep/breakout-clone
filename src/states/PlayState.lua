@@ -29,6 +29,7 @@ function PlayState:enter(params)
     self.balls = params.balls
     self.level = params.level
     self.powerup = nil
+    self.key = false
     self.count = 0
 
     self.recoverPoints = 5000
@@ -60,6 +61,17 @@ function PlayState:update(dt)
     if love.keyboard.wasPressed('escape') then
         love.event.quit()
     end
+
+    local remainingBricks = self:getInPlayBricks()
+
+    if #remainingBricks == 1 and not key then
+        local lastBrick = remainingBricks[1]
+        if lastBrick.locked then
+            lastBrick.locked = false
+            lastBrick.color = 1
+        end
+    end
+
     self.count = self.count + 1
 end
 
@@ -169,7 +181,7 @@ function PlayState:updatePowerup()
     self.powerup:update(self.count)
     -- finally, check if powerup should be activated
     if self:shouldActivatePowerup() then
-      self:activePowerup()
+      self:activatePowerup()
     end
   end
 end
@@ -197,20 +209,37 @@ function PlayState:isBallPowerupActive()
   return #self:getInPlayBalls() < 2
 end
 
-function PlayState:activePowerup()
-  gSounds['confirm']:play()
+function PlayState:activatePowerup()
+    gSounds['confirm']:play()
 
-  for k, ball in pairs(self.balls) do
-    ball.inPlay = true
-    ball.x = self.paddle.x + (self.paddle.width / 2) - 4
-    ball.y = self.paddle.y - 8
-    self:addRandomBallVelocity(ball)
-  end
+    if self.powerup.type == POWERUP_TYPE_KEY then
+        self.key = true
+    elseif self.powerup.type == POWERUP_TYPE_TRIPLE then
+        for k, ball in pairs(self.balls) do
+            ball.inPlay = true
+            ball.x = self.paddle.x + (self.paddle.width / 2) - 4
+            ball.y = self.paddle.y - 8
+            self:addRandomBallVelocity(ball)
+        end
+    end
 
+    self.powerup = nil
+end
+
+function PlayState:getInPlayBricks()
+    local inPlayBricks = {}
+
+    for k, brick in pairs(self.bricks) do
+        if brick.inPlay then
+            table.insert(inPlayBricks, brick)
+        end
+    end
+
+    return inPlayBricks
 end
 
 function PlayState:getInPlayBalls()
-  inPlayBalls = {}
+  local inPlayBalls = {}
 
   for k, ball in pairs(self.balls) do
     if ball.inPlay then
@@ -230,6 +259,12 @@ function PlayState:updateBrickCollision(ball)
 
           -- add to score
           self.score = self.score + (brick.tier * 200 + brick.color * 25)
+
+          if self.key and brick.locked then
+            self.score = self.score + 2000
+            brick.locked = false
+            gSounds['key']:play()
+          end
 
           -- trigger the brick's hit function, which removes it from play
           brick:hit()
@@ -306,11 +341,24 @@ function PlayState:updateBrickCollision(ball)
 end
 
 function PlayState:rollPowerupChance(target)
-  if  self.powerup == nil and self:isBallPowerupActive() then
-    if math.random(1,4) == math.random(1,4) then
-      self.powerup = Powerup(target.x + target.width / 2, target.y, 7, 8)
+    if  self.powerup == nil and math.random(1,4) == math.random(1,4)  then
+        if not self.key and self:containsLockedBrick() then
+            self.powerup = Powerup(target.x + target.width / 2, target.y, 10, 10, POWERUP_TYPE_KEY)
+        elseif self:isBallPowerupActive() then
+            self.powerup = Powerup(target.x + target.width / 2, target.y, 7, 8, POWERUP_TYPE_TRIPLE)
+        end
     end
-  end
+end
+
+function PlayState:containsLockedBrick()
+
+    for k, brick in pairs(self.bricks) do
+        if brick.locked then
+            return true
+        end
+    end
+
+    return false
 end
 
 function PlayState:render()
@@ -338,6 +386,7 @@ function PlayState:render()
 
     renderScore(self.score)
     renderHealth(self.health)
+    self:renderPowerupTracker()
 
     -- pause text, if paused
     if self.paused then
@@ -354,4 +403,11 @@ function PlayState:checkVictory()
     end
 
     return true
+end
+
+function PlayState:renderPowerupTracker()
+    if self.key then
+        local x = VIRTUAL_WIDTH - 125
+        love.graphics.draw(gTextures['main'], gFrames['powerups'][10], x, 2)
+    end
 end

@@ -41,11 +41,11 @@ end
 ]]
 function table.slice(tbl, first, last, step)
     local sliced = {}
-  
+
     for i = first or 1, last or #tbl, step or 1 do
       sliced[#sliced+1] = tbl[i]
     end
-  
+
     return sliced
 end
 
@@ -55,7 +55,10 @@ end
     we have to return a subset of GenerateQuads.
 ]]
 function GenerateQuadsBricks(atlas)
-    return table.slice(GenerateQuads(atlas, 32, 16), 1, 21)
+    local quads = GenerateQuads(atlas, 32, 16)
+    local bricks = table.slice(quads, 1, 21)
+    table.insert(bricks, quads[24])
+    return bricks
 end
 
 --[[
@@ -129,15 +132,15 @@ end
 function GenerateQuadsPowerUps(atlas)
   local x = 0
   local y = 192
-  
+
   local counter = 1
   local quads = {}
-  
+
   for i = 0, 10 do
     quads[counter] = love.graphics.newQuad(x, y, 16, 16, atlas:getDimensions())
     x = x + 16
     counter = counter + 1
   end
-  
+
   return quads
 end
